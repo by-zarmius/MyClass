@@ -53,7 +53,6 @@ async def go_to_main_menu(message: types.Message):
         await message.answer('Главное меню:', reply_markup=main_keyboard.start_menu_for_new_user)
 
 
-
 @dp.callback_query_handler(text_contains="create_class", state=NewClass.Name)
 async def confirm_create_new_class(call: types.CallbackQuery, state: FSMContext):
     await call.answer()
@@ -62,8 +61,14 @@ async def confirm_create_new_class(call: types.CallbackQuery, state: FSMContext)
     action = call.data.split(':')[1]
 
     if action == 'confirm':
+
         new_class.members = [call.from_user.id]
         await new_class.create()
+
+        lessons_schedule = db_commands.LessonSchedule()
+        lessons_schedule.class_id = new_class.id
+        await lessons_schedule.create()
+
         await state.reset_state()
 
         await call.message.answer('Поздравляю, вы создали новый класс!\n\nПерейдите в раздел "Мой класс", '

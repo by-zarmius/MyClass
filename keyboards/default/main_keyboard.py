@@ -45,11 +45,32 @@ class_life = ReplyKeyboardMarkup(
             KeyboardButton(text='Объявления'),
         ],
         [
-            KeyboardButton(text='Сбор денег'),
+            KeyboardButton(text='Главное меню'),
+        ],
+    ]
+)
+
+home_tasks_main = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Просмотреть дз'),
+            KeyboardButton(text='Добавить')
         ],
         [
             KeyboardButton(text='Главное меню'),
+        ]
+    ]
+)
+
+lesson_schedule = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Просмотреть распорядок'),
+            KeyboardButton(text='Изменить'),
         ],
+        [
+            KeyboardButton(text='Главное меню'),
+        ]
     ]
 )
 

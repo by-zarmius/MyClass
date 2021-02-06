@@ -61,10 +61,38 @@ class Events(db.Model):
     class_id = Column(Integer, ForeignKey(SchoolClass.id))
     name = Column(String(150))
     date = Column(Date())
+    description = Column(String(500))
     tasks = Column(ARRAY(String(250)))
     complete_tasks = Column(ARRAY(String(250)))
 
     query: sql.Select
+
+    school_class = relationship('SchoolClass', foreign_keys='SchoolClass.class_id')
+
+
+class LessonSchedule(db.Model):
+    __tablename__ = 'lesson_schedule'
+    id = Column(Integer, Sequence('schedule_id_seq'), primary_key=True)
+    class_id = Column(Integer, ForeignKey(SchoolClass.id))
+    monday = Column(ARRAY(String(100)))
+    tuesday = Column(ARRAY(String(100)))
+    wednesday = Column(ARRAY(String(100)))
+    thursday = Column(ARRAY(String(100)))
+    friday = Column(ARRAY(String(100)))
+
+    query: sql.Select
+
+    school_class = relationship('SchoolClass', foreign_keys='SchoolClass.class_id')
+
+
+class home_task(db.Model):
+    __tablename__ = 'home_task'
+    id = Column(Integer, Sequence('home_task_seq'), primary_key=True)
+    class_id = Column(Integer, ForeignKey(SchoolClass.id))
+    lesson_id = Column(Integer, ForeignKey(LessonSchedule.id))
+    date = Column(Date())
+    task = Column(String(300))
+
 
     school_class = relationship('SchoolClass', foreign_keys='SchoolClass.class_id')
 
@@ -124,6 +152,15 @@ class DBCommands:
         id = await self.get_id_class()
         events = await Events.query.where(Events.class_id == int(id)).gino.all()
         return events
+
+    async def get_event_by_id(self, event_id):
+        event = await Events.query.where(Events.id == int(event_id)).gino.first()
+        return event
+
+    async def get_schedule(self):
+        id = await self.get_id_class()
+        schedule = await LessonSchedule.query.where(LessonSchedule.class_id == int(id)).gino.first()
+        return schedule
 
 
 
