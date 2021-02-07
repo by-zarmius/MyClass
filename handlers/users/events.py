@@ -3,6 +3,8 @@ import datetime
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
+from handlers.users.commands import get_main_menu
+from handlers.users.notice import main_notice
 from utils.db_api import db_commands
 
 from loader import dp
@@ -114,7 +116,7 @@ async def complete_create_event(call: types.CallbackQuery, state: FSMContext):
     await event.create()
 
     await state.reset_state()
-    await main_events(call.message)
+    await main_events(call.message, edit=True)
 
 
 @dp.callback_query_handler(text='event_create_tasks:yes', state=NewEvent.Description)
@@ -125,7 +127,7 @@ async def create_event_add_tasks(call: types.CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=NewEvent.NewTask)
-async def create_task_for_event(message: types.Message, state: FSMContext):
+async def create_task_for_event(message: types.Message, state: FSMContext, edit_tasks=False):
     data = await state.get_data()
     event = data.get('event')
     try:
@@ -140,7 +142,11 @@ async def create_task_for_event(message: types.Message, state: FSMContext):
     send_message += '\n\n<b>Продолжайте писать ещё задания или нажмите "Закончить"</b>'
 
     await state.update_data(event=event)
-    await message.answer(send_message, reply_markup=inline_keyboards.event_add_more_task)
+
+    if not edit_tasks:
+        await message.answer(send_message, reply_markup=inline_keyboards.event_add_more_task)
+    else:
+        await message.answer(send_message, reply_markup=inline_keyboards.event_end_enter_tasks)
 
 
 @dp.callback_query_handler(text='end_enter_task_for_event', state=NewEvent.NewTask)
@@ -202,9 +208,12 @@ async def main_tasks(call: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_startswith='list_events:tasks')
-async def choice_event_tasks(call: types.CallbackQuery):
+async def choice_event_tasks(call: types.CallbackQuery, event_id=None):
     await call.answer()
-    id = str(call.data).split(':')[2]
+    try:
+        id = str(call.data).split(':')[2]
+    except IndexError:
+        id = event_id
     event = await db.get_event_by_id(id)
 
     send_message = '<u>Выбрано мероприятие:</u>'
@@ -227,6 +236,7 @@ async def choice_event_tasks(call: types.CallbackQuery):
     send_message += f' <i><b>{name}</b></i>\n<b>Описание:</b> {description}\n<b>Дата:</b> {new_date}\n{tasks}'
 
     await call.message.edit_text(send_message, parse_mode='html', reply_markup=await inline_keyboards.main_task(id))
+    await NewTasks.Task.set()
 
 
 @dp.callback_query_handler(text='back_from_task')
@@ -235,23 +245,43 @@ async def cancel_delete_event(call: types.CallbackQuery):
     await main_tasks(call)
 
 
-@dp.callback_query_handler(text_startswith='main_task:add')
-async def main_task_add(call: types.CallbackQuery):
+@dp.callback_query_handler(text_startswith='main_task:add', state=NewTasks.Task)
+async def main_task_add(call: types.CallbackQuery, state: FSMContext):
     await call.answer()
     id = str(call.data).split(':')[2]
     event = await db.get_event_by_id(id)
 
-    state = await NewTasks.Task.set()
-    state.update_data(event_id=id)
-
+    await state.update_data(event=event, create=True)
     await call.message.edit_text('Введите название задания:')
 
 
 @dp.message_handler(state=NewTasks.Task)
 async def new_task(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    id = data.get('event_id')
-    print(id)
+    state_data = await state.get_data()
+    create = state_data.get('create')
+    print(create, type(create))
+    if message.text == 'Главное меню':
+        await state.reset_state()
+        await get_main_menu(message)
+    elif message.text == 'Объявления':
+        await state.reset_state()
+        await main_notice(message)
+    elif message.text == 'Мероприятия':
+        await state.reset_state()
+        await main_events(message)
+    elif create:
+        await create_task_for_event(message, state, edit_tasks=True)
+    else:
+        pass
+
+
+@dp.callback_query_handler(text='to_event_detail', state=NewTasks.Task)
+async def end_add_task(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
+    state_data = await state.get_data()
+    event = state_data.get('event')
+    await event.update(tasks=event.tasks).apply()
+    await choice_event_tasks(call, event_id=event.id)
 
 
 # @dp.callback_query_handler()

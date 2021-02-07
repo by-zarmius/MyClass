@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
@@ -19,6 +20,8 @@ main_task_cd = CallbackData('main_task', 'action', 'id')
 
 schedule_days_cd = CallbackData('schedule_days', 'day')
 watch_schedule_days_cd = CallbackData('watch_schedule_days', 'day')
+
+choice_subject_cd = CallbackData('choice_subject', 'subject')
 
 create_class = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -86,6 +89,9 @@ event_add_more_task = InlineKeyboardMarkup(
         ]
     ]
 )
+
+event_end_enter_tasks = InlineKeyboardMarkup().add(InlineKeyboardButton(text='Закончить',
+                                                                        callback_data='to_event_detail'))
 
 
 async def list_events(action):
@@ -172,4 +178,66 @@ from_schedule = InlineKeyboardMarkup(
         [InlineKeyboardButton(text='Назад', callback_data='back_to_main_schedule')]
     ]
 )
+
+
+async def choice_subject():
+    kb = InlineKeyboardMarkup()
+
+    subjects = list(await db.get_set_all_subjects())
+    subjects.sort()
+    subjects.reverse()
+    subjects_list_2 = []
+    temp_list = []
+    for i in range(0, len(subjects)):
+        lesson = subjects.pop()
+        temp_list.append(lesson)
+
+        if len(temp_list) == 2:
+            subjects_list_2.append(temp_list)
+            temp_list = []
+
+    for subject in subjects_list_2:
+        if len(subject) == 2:
+            kb.row(
+                InlineKeyboardButton(text=subject[0], callback_data=choice_subject_cd.new(subject=subject[0])),
+                InlineKeyboardButton(text=subject[1], callback_data=choice_subject_cd.new(subject=subject[1]))
+            )
+        else:
+            kb.row(
+                InlineKeyboardButton(text=subject[0], callback_data=choice_subject_cd.new(subject=subject[0]))
+            )
+    return kb
+
+
+async def choice_date(subject):
+    kb = InlineKeyboardMarkup()
+    day_of_week = int(datetime.now().isoweekday())
+    day_of_month, this_month = int(datetime.now().day), int(datetime.now().month)
+    days = await db.get_days_of_subject(subject)
+    print(days)
+
+    date_lessons = []
+    counter = 0
+    total_days = 0
+    if len(date_lessons) <= 4:
+        for day in days:
+            day = int(day)
+            if day > day_of_week:
+                next_lesson = total_days + day - day_of_week
+                total_days += next_lesson
+                date_of_lesson = datetime.now() + timedelta(days=next_lesson)
+                date_of_lesson = date_of_lesson.date()
+                date_lessons.append(date_of_lesson)
+            elif day < day_of_week:
+                next_lesson = total_days + day_of_week - day
+                total_days += next_lesson
+                date_of_lesson = datetime.now() + timedelta(days=next_lesson)
+                date_of_lesson = date_of_lesson.date()
+                date_lessons.append(date_of_lesson)
+
+    print(date_lessons)
+
+
+
+
 

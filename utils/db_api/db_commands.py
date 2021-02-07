@@ -162,7 +162,32 @@ class DBCommands:
         schedule = await LessonSchedule.query.where(LessonSchedule.class_id == int(id)).gino.first()
         return schedule
 
+    async def get_set_all_subjects(self):
+        schedule = await self.get_schedule()
+        all_days_lists = [schedule.monday, schedule.tuesday, schedule.wednesday, schedule.thursday, schedule.friday]
+        all_days = []
+        for schedule_day in all_days_lists:
+            for subject in schedule_day:
+                all_days.append(subject)
+        all_days = set(all_days)
+        return all_days
 
+    async def get_days_of_subject(self, subject):
+        schedule = await self.get_schedule()
+        schedule_week_dict = {
+            '1': schedule.monday,
+            '2': schedule.tuesday,
+            '3': schedule.wednesday,
+            '4': schedule.thursday,
+            '5': schedule.friday
+        }
+
+        days = []
+        for day, schedule_of_day in schedule_week_dict.items():
+            if subject in schedule_of_day:
+                days.append(day)
+
+        return days
 
 
 async def create_db():
