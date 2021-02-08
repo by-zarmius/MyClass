@@ -25,3 +25,7 @@ class NewTasks(StatesGroup):
 class NewSchedule(StatesGroup):
     Schedule = State()
 
+
+class EditEvent(StatesGroup):
+    UniversalState = State()
+

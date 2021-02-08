@@ -15,8 +15,11 @@ events_cd = CallbackData('events', 'action')
 event_create_task_cd = CallbackData('event_create_tasks', 'action')
 list_events_cd = CallbackData('list_events', 'action', 'event')
 check_delete_event_cd = CallbackData('check_remove_event', 'action', 'id')
-
 main_task_cd = CallbackData('main_task', 'action', 'id')
+delete_task_cd = CallbackData('delete_task', 'task_id', 'event_id')
+choice_complete_tasks_cd = CallbackData('cc_tasks', 'task_id', 'event_id', 'status')
+
+edit_event_cd = CallbackData('edit_event', 'action', 'event_id')
 
 schedule_days_cd = CallbackData('schedule_days', 'day')
 watch_schedule_days_cd = CallbackData('watch_schedule_days', 'day')
@@ -132,6 +135,60 @@ async def main_task(id):
             ]
         ]
     )
+
+
+async def choose_task_delete(event_id):
+    kb = InlineKeyboardMarkup()
+    event = await db.get_event_by_id(event_id)
+    counter = 0
+    for task in event.tasks:
+        kb.add(InlineKeyboardButton(text=task, callback_data=delete_task_cd.new(event_id=event_id, task_id=counter)))
+        counter += 1
+    kb.add(InlineKeyboardButton(text='Вернуться', callback_data=f'back_from_delete_task:{event_id}'))
+    return kb
+
+
+async def choice_complete_tasks(event_id):
+    kb = InlineKeyboardMarkup()
+    event = await db.get_event_by_id(event_id)
+    if not event.complete_tasks:
+        event.complete_tasks = []
+    if not event.tasks:
+        event.tasks = []
+
+    complete_counter = 0
+    for complete_task in event.complete_tasks:
+        kb.add(InlineKeyboardButton(text='✅'+complete_task,
+                                    callback_data=choice_complete_tasks_cd.new(
+                                        event_id=event_id,
+                                        task_id=complete_counter,
+                                        status='complete'
+                                    )))
+    task_counter = 0
+    for task in event.tasks:
+        kb.add(InlineKeyboardButton(text=task,
+                                    callback_data=choice_complete_tasks_cd.new(
+                                        event_id=event_id,
+                                        task_id=task_counter,
+                                        status='work'
+                                    )))
+    kb.add(InlineKeyboardButton(text='Готово\Вернуться', callback_data=f'bf_choice_complete_task:{event_id}'))
+    return kb
+
+
+def edit_event(event_id):
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text='Название', callback_data=edit_event_cd.new(event_id=event_id, action='name'))),
+    kb.add(InlineKeyboardButton(text='Описание', callback_data=edit_event_cd.new(event_id=event_id, action='description'))),
+    kb.add(InlineKeyboardButton(text='Дата', callback_data=edit_event_cd.new(event_id=event_id, action='date'))),
+    kb.add(InlineKeyboardButton(text='Вернуться', callback_data='bf_edit_event'))
+    return kb
+
+
+def to_main_edit_event(event_id):
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text='Вернуться', callback_data=f'to_main_edit_event:{event_id}'))
+    return kb
 
 
 schedule_days = InlineKeyboardMarkup(
