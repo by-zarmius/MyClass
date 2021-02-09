@@ -13,7 +13,7 @@ from states.all_states import NewSchedule
 from .commands import get_main_menu
 
 
-db = db_commands.DBCommands()
+db = db_commands
 
 
 async def create_schedule_of_day(day):
@@ -44,17 +44,29 @@ async def create_schedule_of_day(day):
 
 @dp.message_handler(text='Распорядок')
 async def main_schedule(message: types.Message):
-    await message.answer('Выберите действие:', reply_markup=main_keyboard.lesson_schedule)
+    user_have_class = await db.check_in_class()
+    if not user_have_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
+    else:
+        user = await db.get_user()
+        full_name_user = types.User.get_current().full_name
+        await user.update(tg_nickname=full_name_user).apply()
+
+        await message.answer('Выберите действие:', reply_markup=main_keyboard.lesson_schedule)
 
 
 @dp.message_handler(text='Просмотреть распорядок')
 async def choice_day_watch_schedule(message: types.Message, edit=False):
-    if not edit:
-        await message.answer('Расписание на который день отобразить:',
-                             reply_markup=inline_keyboards.watch_schedule_days)
+    user_have_class = await db.check_in_class()
+    if not user_have_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
     else:
-        await message.edit_text('Расписание на который день отобразить:',
-                             reply_markup=inline_keyboards.watch_schedule_days)
+        if not edit:
+            await message.answer('Расписание на который день отобразить:',
+                                 reply_markup=inline_keyboards.watch_schedule_days)
+        else:
+            await message.edit_text('Расписание на который день отобразить:',
+                                 reply_markup=inline_keyboards.watch_schedule_days)
 
 @dp.callback_query_handler(text_startswith='watch_schedule_days')
 async def watch_schedule(call: types.CallbackQuery):
@@ -106,39 +118,42 @@ async def back_to_main_schedule(call: types.CallbackQuery):
 
 @dp.message_handler(text='Изменить')
 async def edit_schedule(message: types.Message):
-    send_message = '<u>Распорядок на неделю:</u>'
-    schedule = await db.get_schedule()
-    monday = schedule.monday
-    tuesday = schedule.tuesday
-    wednesday = schedule.wednesday
-    thursday = schedule.thursday
-    friday = schedule.friday
+    user_have_class = await db.check_in_class()
+    if not user_have_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
+    else:
+        send_message = '<u>Распорядок на неделю:</u>'
+        schedule = await db.get_schedule()
+        monday = schedule.monday
+        tuesday = schedule.tuesday
+        wednesday = schedule.wednesday
+        thursday = schedule.thursday
+        friday = schedule.friday
 
-    schedule_week_dict = {
-        'Понедельник': monday,
-        'Вторник': tuesday,
-        'Среда': wednesday,
-        'Четверг': thursday,
-        'Пятница': friday
-    }
+        schedule_week_dict = {
+            'Понедельник': monday,
+            'Вторник': tuesday,
+            'Среда': wednesday,
+            'Четверг': thursday,
+            'Пятница': friday
+        }
 
-    for day, data in schedule_week_dict.items():
-        if schedule_week_dict[day]:
-            lessons = ''
-            counter = 1
-            for lesson in data:
-                lessons += f'\n{counter}) {lesson}'
-                counter += 1
+        for day, data in schedule_week_dict.items():
+            if schedule_week_dict[day]:
+                lessons = ''
+                counter = 1
+                for lesson in data:
+                    lessons += f'\n{counter}) {lesson}'
+                    counter += 1
 
-            send_message += f'\n\n<b>{day}</b>:{lessons}'
-        else:
-            send_message += f'\n\n<b>{day}:</b> Пусто...'
+                send_message += f'\n\n<b>{day}</b>:{lessons}'
+            else:
+                send_message += f'\n\n<b>{day}:</b> Пусто...'
 
-    send_message += '\n\n<i>Выберите, расписаник которого дня вы хотите изменить:</i>'
+        send_message += '\n\n<i>Выберите, расписаник которого дня вы хотите изменить:</i>'
 
-    await message.answer(send_message, reply_markup=inline_keyboards.schedule_days, parse_mode='html')
-    # if message
-    await NewSchedule.Schedule.set()
+        await message.answer(send_message, reply_markup=inline_keyboards.schedule_days, parse_mode='html')
+        await NewSchedule.Schedule.set()
 
 
 @dp.callback_query_handler(text_startswith='schedule_days:', state=NewSchedule.Schedule)

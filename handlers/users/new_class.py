@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
+from handlers.users.commands import get_main_menu
 from utils.db_api import db_commands
 
 from loader import dp
@@ -10,18 +11,7 @@ from keyboards.inline import inline_keyboards
 from states.all_states import NewClass
 
 
-db = db_commands.DBCommands()
-
-
-@dp.message_handler(text='Мой класс')
-async def my_class(message: types.Message):
-    user_class = await db.check_in_class()
-    if user_class:
-        await message.answer('Нужно ещё сделать.')
-    else:
-        await message.answer('Вы не являетесь участником какого-либо класса. Создайте новый '
-                             'или присоединитесь к уже существующему',
-                             reply_markup=main_keyboard.without_class)
+db = db_commands
 
 
 @dp.message_handler(text='Создать класс')
@@ -78,3 +68,42 @@ async def confirm_create_new_class(call: types.CallbackQuery, state: FSMContext)
 
     else:
         await call.message.answer('Введите название заново:')
+
+
+@dp.message_handler(text='Присоединиться')
+async def message_join_class(message: types.Message):
+    user_class = await db.check_in_class()
+    if not user_class:
+        await message.answer('Введите код класса, к которому хотите присоединиться:')
+        await NewClass.JoinClass.set()
+    else:
+        await message.answer('Вы уже являетесь участником класса.')
+
+
+@dp.message_handler(state=NewClass.JoinClass)
+async def join_class(message: types.Message, state: FSMContext):
+    if message.text == 'Создать класс':
+        await state.reset_state()
+        await start_create_new_class(message)
+    elif message.text == 'Присоединиться':
+        await state.reset_state()
+        await message_join_class(message)
+    elif message.text == 'Главное меню':
+        print('hi')
+        await state.reset_state()
+        await get_main_menu(message)
+    else:
+        print('wtf')
+        class_id = message.text
+        user_id = types.User.get_current().id
+        user_class = await db.get_class_by_id(class_id)
+        if user_class:
+            await state.reset_state()
+            user_class.members += [user_id]
+            await user_class.update(members=user_class.members).apply()
+            await message.answer(f'Вы присоединились к классу: {user_class.name}')
+            await get_main_menu(message)
+        else:
+            await message.answer('Такого класса не существует.')
+
+

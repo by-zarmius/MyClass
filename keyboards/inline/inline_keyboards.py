@@ -5,7 +5,7 @@ from aiogram.utils.callback_data import CallbackData
 
 from utils.db_api import db_commands
 
-db = db_commands.DBCommands()
+db = db_commands
 
 create_class_cd = CallbackData('create_class', 'action')
 notice_cd = CallbackData('notice', 'action')
@@ -25,6 +25,8 @@ schedule_days_cd = CallbackData('schedule_days', 'day')
 watch_schedule_days_cd = CallbackData('watch_schedule_days', 'day')
 
 choice_subject_cd = CallbackData('choice_subject', 'subject')
+
+my_class_cd = CallbackData('my_class', 'action')
 
 create_class = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -295,6 +297,37 @@ async def choice_date(subject):
     print(date_lessons)
 
 
+def edit_class():
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text='Изменить',
+                                callback_data=my_class_cd.new(action='edit')))
+    kb.add(InlineKeyboardButton(text='Участники класса',
+                                callback_data=my_class_cd.new(action='view_members')))
+    return kb
 
+
+to_my_class = InlineKeyboardMarkup().add(
+    InlineKeyboardButton(text='Вернуться', callback_data='to_my_class')
+)
+
+
+def edit_info_class():
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text='Название', callback_data='edit_class:name'))
+    kb.add(InlineKeyboardButton(text='Прикреплённый чат', callback_data='edit_class:tg_chat'))
+    return kb
+
+
+def edit_user_name():
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text='Изменить имя', callback_data='user:edit_name'))
+    return kb
+
+
+def exit_from_class():
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text='Да.', callback_data='exit_from_class:yes'))
+    kb.add(InlineKeyboardButton(text='Нет!', callback_data='exit_from_class:no'))
+    return kb
 
 

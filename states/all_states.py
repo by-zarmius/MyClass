@@ -4,6 +4,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 class NewClass(StatesGroup):
     Name = State()
     Chat = State()
+    JoinClass = State()
 
 
 class NewNotice(StatesGroup):
@@ -29,3 +30,11 @@ class NewSchedule(StatesGroup):
 class EditEvent(StatesGroup):
     UniversalState = State()
 
+
+class MyClass(StatesGroup):
+    Name = State()
+    PinCat = State()
+
+
+class EditUserName(StatesGroup):
+    UserName = State()

@@ -74,3 +74,14 @@ lesson_schedule = ReplyKeyboardMarkup(
     ]
 )
 
+settings_buttons = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Изменить имя'),
+            KeyboardButton(text='Выйти из класса')
+        ],
+        [
+            KeyboardButton(text='Главное меню')
+        ]
+    ]
+)

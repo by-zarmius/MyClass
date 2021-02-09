@@ -13,51 +13,59 @@ from keyboards.inline import inline_keyboards
 from states.all_states import NewEvent, NewTasks, EditEvent
 
 
-db = db_commands.DBCommands()
+db = db_commands
 
 
 @dp.message_handler(text='Мероприятия')
 async def main_events(message: types.Message, edit=False):
-    send_message = '<u>Активные мероприятия:</u>'
-    events = await db.get_event()
+    user_class = await db.check_in_class()
+    if not user_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
+    else:
+        user = await db.get_user()
+        full_name_user = types.User.get_current().full_name
+        await user.update(tg_nickname=full_name_user).apply()
 
-    if events:
-        counter = 1
-        for event in events:
-            name = event.name
-            description = event.description
+        send_message = '<u>Активные мероприятия:</u>'
+        events = await db.get_event()
 
-            date = str(event.date).split('-')
-            year, month, day = date[0], date[1], date[2]
-            list_date = [day, month, year]
-            new_date = '.'.join(list_date)
-            tasks = '<b>Задания:</b>'
+        if events:
+            counter = 1
+            for event in events:
+                name = event.name
+                description = event.description
 
-            if event.complete_tasks:
-                for task in event.complete_tasks:
-                    tasks += f'\n✅ {task}'
+                date = str(event.date).split('-')
+                year, month, day = date[0], date[1], date[2]
+                list_date = [day, month, year]
+                new_date = '.'.join(list_date)
+                tasks = '<b>Задания:</b>'
 
-            if event.tasks:
-                for task in event.tasks:
-                    tasks += f'\n🟡 {task}'
+                if event.complete_tasks:
+                    for task in event.complete_tasks:
+                        tasks += f'\n✅ {task}'
+
+                if event.tasks:
+                    for task in event.tasks:
+                        tasks += f'\n🟡 {task}'
+                else:
+                    tasks += ' Заданий пока нет'
+
+                send_message += f'\n\n{str(counter)}) <i><b>{name}</b></i>\n<b>Описание:</b> {description}\n<b>Дата:</b> {new_date}\n{tasks}'
+                counter += 1
+        else:
+            send_message += '\n\nНет актуальных мероприятий...'
+
+        if not edit:
+            if events:
+                await message.answer(send_message, reply_markup=inline_keyboards.events_buttons)
             else:
-                tasks += ' Заданий пока нет'
-
-            send_message += f'\n\n{str(counter)}) <i><b>{name}</b></i>\n<b>Описание:</b> {description}\n<b>Дата:</b> {new_date}\n{tasks}'
-            counter += 1
-    else:
-        send_message += '\n\nНет актуальных мероприятий...'
-
-    if not edit:
-        if events:
-            await message.answer(send_message, reply_markup=inline_keyboards.events_buttons)
+                await message.answer(send_message, reply_markup=inline_keyboards.no_events_buttons)
         else:
-            await message.answer(send_message, reply_markup=inline_keyboards.no_events_buttons)
-    else:
-        if events:
-            await message.edit_text(send_message, reply_markup=inline_keyboards.events_buttons)
-        else:
-            await message.edit_text(send_message, reply_markup=inline_keyboards.no_events_buttons)
+            if events:
+                await message.edit_text(send_message, reply_markup=inline_keyboards.events_buttons)
+            else:
+                await message.edit_text(send_message, reply_markup=inline_keyboards.no_events_buttons)
 
 
 @dp.callback_query_handler(text='events:add')

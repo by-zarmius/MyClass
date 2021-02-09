@@ -7,21 +7,32 @@ from loader import dp
 
 from keyboards.default import main_keyboard
 from keyboards.inline import inline_keyboards
-from states.all_states import NewEvent, NewTasks
 
 
-db = db_commands.DBCommands()
+db = db_commands
 
 
 @dp.message_handler(text='ДЗ')
 async def main_ht(message: types.Message):
-    await message.answer('Выберите действие:', reply_markup=main_keyboard.home_tasks_main)
+    user_class = await db.check_in_class()
+    if not user_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
+    else:
+        user = await db.get_user()
+        full_name_user = types.User.get_current().full_name
+        await user.update(tg_nickname=full_name_user).apply()
+
+        await message.answer('Выберите действие:', reply_markup=main_keyboard.home_tasks_main)
 
 
 @dp.message_handler(text='Добавить')
 async def choice_subject(message: types.Message):
-    await message.answer('Выберите предмет к которому хотите добавить дз:',
-                         reply_markup=await inline_keyboards.choice_subject())
+    user_class = await db.check_in_class()
+    if not user_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
+    else:
+        await message.answer('Выберите предмет к которому хотите добавить дз:',
+                             reply_markup=await inline_keyboards.choice_subject())
 
 
 @dp.callback_query_handler(text_startswith='choice_subject')

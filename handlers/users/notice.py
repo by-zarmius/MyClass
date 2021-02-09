@@ -9,29 +9,37 @@ from keyboards.inline import inline_keyboards
 from states.all_states import NewNotice
 
 
-db = db_commands.DBCommands()
+db = db_commands
 
 
 @dp.message_handler(text='Объявления')
 async def main_notice(message: types.Message):
-    send_message = '<b>Текущие объявлени:</b>'
-    notices = await db.get_notice()
-
-    if notices:
-        counter = 1
-        for notice in notices:
-            title = notice.name
-            body = notice.body
-
-            send_message += f'\n\n{str(counter)}) <i>{title}</i>\n{body}'
-            counter += 1
+    user_have_class = await db.check_in_class()
+    if not user_have_class:
+        await message.answer('Это доступно только пользователям, которые являются участником класса')
     else:
-        send_message += '\n\n У вас пока нет объявлений.'
+        user = await db.get_user()
+        full_name_user = types.User.get_current().full_name
+        await user.update(tg_nickname=full_name_user).apply()
 
-    if notices:
-        await message.answer(send_message, parse_mode='html', reply_markup=inline_keyboards.notice_buttons)
-    else:
-        await message.answer(send_message, parse_mode='html', reply_markup=inline_keyboards.no_notice_buttons)
+        send_message = '<b>Текущие объявлени:</b>'
+        notices = await db.get_notice()
+
+        if notices:
+            counter = 1
+            for notice in notices:
+                title = notice.name
+                body = notice.body
+
+                send_message += f'\n\n{str(counter)}) <i>{title}</i>\n{body}'
+                counter += 1
+        else:
+            send_message += '\n\n У вас пока нет объявлений.'
+
+        if notices:
+            await message.answer(send_message, parse_mode='html', reply_markup=inline_keyboards.notice_buttons)
+        else:
+            await message.answer(send_message, parse_mode='html', reply_markup=inline_keyboards.no_notice_buttons)
 
 
 @dp.callback_query_handler(text_contains='notice:add')
