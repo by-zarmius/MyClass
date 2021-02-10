@@ -38,3 +38,7 @@ class MyClass(StatesGroup):
 
 class EditUserName(StatesGroup):
     UserName = State()
+
+
+class HomeTasks(StatesGroup):
+    Task = State()

@@ -90,7 +90,7 @@ class home_task(db.Model):
     __tablename__ = 'home_task'
     id = Column(Integer, Sequence('home_task_seq'), primary_key=True)
     class_id = Column(Integer, ForeignKey(SchoolClass.id))
-    lesson_id = Column(Integer, ForeignKey(LessonSchedule.id))
+    lesson = Column(String(250))
     date = Column(Date())
     task = Column(String(300))
 
@@ -187,8 +187,9 @@ async def get_set_all_subjects():
     all_days_lists = [schedule.monday, schedule.tuesday, schedule.wednesday, schedule.thursday, schedule.friday]
     all_days = []
     for schedule_day in all_days_lists:
-        for subject in schedule_day:
-            all_days.append(subject)
+        if schedule_day:
+            for subject in schedule_day:
+                all_days.append(subject)
     all_days = set(all_days)
     return all_days
 
@@ -205,9 +206,8 @@ async def get_days_of_subject(subject):
 
     days = []
     for day, schedule_of_day in schedule_week_dict.items():
-        if subject in schedule_of_day:
+        if schedule_of_day and subject in schedule_of_day:
             days.append(day)
-
     return days
 
 
@@ -220,6 +220,9 @@ async def get_user():
 async def get_user_by_tg_id(tg_id):
     user = await User.query.where(User.telegram_id == int(tg_id)).gino.first()
     return user
+
+
+# async def get_lesson_id(name):
 
 
 async def create_db():

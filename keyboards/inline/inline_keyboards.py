@@ -61,6 +61,7 @@ async def delete_notice():
 
     return kb
 
+
 events_buttons = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text='Добавить мероприятие', callback_data=events_cd.new(action='add'))],
@@ -104,7 +105,8 @@ async def list_events(action):
     kb = types.InlineKeyboardMarkup()
 
     for event in events:
-        kb.add(types.InlineKeyboardButton(event.name, callback_data=list_events_cd.new(action=action, event=str(event.id))))
+        kb.add(types.InlineKeyboardButton(event.name,
+                                          callback_data=list_events_cd.new(action=action, event=str(event.id))))
     kb.add(types.InlineKeyboardButton('Назад', callback_data='back_from_event'))
 
     return kb
@@ -160,7 +162,7 @@ async def choice_complete_tasks(event_id):
 
     complete_counter = 0
     for complete_task in event.complete_tasks:
-        kb.add(InlineKeyboardButton(text='✅'+complete_task,
+        kb.add(InlineKeyboardButton(text='✅' + complete_task,
                                     callback_data=choice_complete_tasks_cd.new(
                                         event_id=event_id,
                                         task_id=complete_counter,
@@ -181,7 +183,8 @@ async def choice_complete_tasks(event_id):
 def edit_event(event_id):
     kb = InlineKeyboardMarkup()
     kb.add(InlineKeyboardButton(text='Название', callback_data=edit_event_cd.new(event_id=event_id, action='name'))),
-    kb.add(InlineKeyboardButton(text='Описание', callback_data=edit_event_cd.new(event_id=event_id, action='description'))),
+    kb.add(InlineKeyboardButton(text='Описание',
+                                callback_data=edit_event_cd.new(event_id=event_id, action='description'))),
     kb.add(InlineKeyboardButton(text='Дата', callback_data=edit_event_cd.new(event_id=event_id, action='date'))),
     kb.add(InlineKeyboardButton(text='Вернуться', callback_data='bf_edit_event'))
     return kb
@@ -268,35 +271,6 @@ async def choice_subject():
     return kb
 
 
-async def choice_date(subject):
-    kb = InlineKeyboardMarkup()
-    day_of_week = int(datetime.now().isoweekday())
-    day_of_month, this_month = int(datetime.now().day), int(datetime.now().month)
-    days = await db.get_days_of_subject(subject)
-    print(days)
-
-    date_lessons = []
-    counter = 0
-    total_days = 0
-    if len(date_lessons) <= 4:
-        for day in days:
-            day = int(day)
-            if day > day_of_week:
-                next_lesson = total_days + day - day_of_week
-                total_days += next_lesson
-                date_of_lesson = datetime.now() + timedelta(days=next_lesson)
-                date_of_lesson = date_of_lesson.date()
-                date_lessons.append(date_of_lesson)
-            elif day < day_of_week:
-                next_lesson = total_days + day_of_week - day
-                total_days += next_lesson
-                date_of_lesson = datetime.now() + timedelta(days=next_lesson)
-                date_of_lesson = date_of_lesson.date()
-                date_lessons.append(date_of_lesson)
-
-    print(date_lessons)
-
-
 def edit_class():
     kb = InlineKeyboardMarkup()
     kb.add(InlineKeyboardButton(text='Изменить',
@@ -331,3 +305,96 @@ def exit_from_class():
     return kb
 
 
+async def choice_date(subject):
+    kb = InlineKeyboardMarkup()
+    day_of_week = int(datetime.now().isoweekday())
+    days_lesson = await db.get_days_of_subject(subject)
+
+    full_days_lesson = []
+
+    while len(full_days_lesson) < 20:
+        full_days_lesson += days_lesson
+
+    full_days_lesson = full_days_lesson[:20]
+    full_days_lesson = list(map(lambda x: int(x), full_days_lesson))
+
+    week = {
+        1: 'Понедельник',
+        2: 'Вторник',
+        3: 'Среда',
+        4: 'Четверг',
+        5: 'Пятница',
+        6: 'Суббота',
+        7: 'Воскресенье',
+    }
+
+    date_lessons = []
+    format_date_lessons = []
+    last_day = 0
+    days_passed = 0
+    for day in full_days_lesson:
+        if last_day < day:
+            last_day = day
+        else:
+            days_passed += 7
+            last_day = day
+
+        if day > day_of_week:
+            days_next_lesson = (day - day_of_week) + days_passed
+        elif day == day_of_week:
+            if days_passed != 0:
+                days_next_lesson = days_passed
+            else:
+                continue
+        elif day < day_of_week:
+            if days_passed != 0:
+                days_next_lesson = days_passed - (day_of_week - day)
+            else:
+                continue
+
+        date_next_lesson = datetime.now().date() + timedelta(days=days_next_lesson)
+        date_lessons.append(date_next_lesson)
+
+        date = str(date_next_lesson).split('-')
+        year_date, month_date, day_date = date[0], date[1], date[2]
+        list_date = [day_date, month_date, year_date]
+        new_date = f'{week[day]} - ' + '.'.join(list_date)
+
+        format_date_lessons.append(new_date)
+
+    format_date_lessons = format_date_lessons[:4]
+
+    counter = 0
+    for date_lesson in format_date_lessons:
+        kb.add(
+            InlineKeyboardButton(
+                date_lesson,
+                callback_data=f'home_task:{subject}:{date_lessons[counter]}'
+            )
+        )
+        counter += 1
+    kb.add(InlineKeyboardButton(text='Ввести другую дату',
+                                callback_data=f'enter_other_date:{subject}'))
+    kb.add(InlineKeyboardButton(text='Вернуться', callback_data='bf_choice_date'))
+
+    return kb
+
+
+def bf_enter_hometask(subject):
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(
+        text='Вернуться', callback_data=f'bf_enter_hometask:{subject}'
+    ))
+    return kb
+
+
+def confirm_add_hometask():
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(
+        text='Да!', callback_data='add_home_task:true'
+    ))
+    kb.add(InlineKeyboardButton(
+        text='Ввести заново...', callback_data='add_home_task:false'
+    ))
+
+    return kb
