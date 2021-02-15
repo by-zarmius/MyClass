@@ -16,6 +16,178 @@ from states.all_states import HomeTasks
 db = db_commands
 
 
+def get_dict_home_tasks(list_home_tasks):
+    dict_home_tasks = {}
+
+    for task in list_home_tasks:
+        date = task.date
+        date = str(date).split('-')
+        year_date, month_date, day_date = date[0], date[1], date[2]
+        list_date = [day_date, month_date, year_date]
+        new_date = '.'.join(list_date)
+        if new_date not in dict_home_tasks:
+
+            dict_home_tasks[new_date] = [task]
+        else:
+            dict_home_tasks[new_date] += [task]
+    return dict_home_tasks
+
+
+@dp.message_handler(text='Просмотреть дз')
+async def main_view_hometasks(message: types.Message, edit=False):
+    if not edit:
+        await message.answer('Выберите, на которые дни отобразить ДЗ:',
+                             reply_markup=inline_keyboards.view_hometasks())
+    else:
+        await message.edit_text('Выберите, на которые дни отобразить ДЗ:',
+                             reply_markup=inline_keyboards.view_hometasks())
+
+
+@dp.callback_query_handler(text='view_hometasks:today')
+async def view_hometask_today(call: types.CallbackQuery):
+    await call.answer()
+    today = datetime.datetime.now()
+    end_date = today + datetime.timedelta(days=1)
+
+    list_home_tasks = await db.get_hometasks_date_interval(today, end_date)
+    dict_home_tasks = {}
+    if list_home_tasks:
+        dict_home_tasks = get_dict_home_tasks(list_home_tasks)
+
+    send_message = '<u>Домашние задания на сегодня:</u>\n'
+
+    if dict_home_tasks:
+        for day, tasks in dict_home_tasks.items():
+            for task in tasks:
+                send_message += f'\n<b>{task.lesson}:</b> {task.task}'
+    else:
+        send_message += '<i>Заданий нет.</i>'
+
+    await call.message.edit_text(send_message, reply_markup=inline_keyboards.bf_view_task)
+
+
+@dp.callback_query_handler(text='view_hometasks:tomorrow')
+async def view_hometask_tomorrow(call: types.CallbackQuery):
+    await call.answer()
+    today = datetime.datetime.now() + datetime.timedelta(days=1)
+    end_date = today + datetime.timedelta(days=1)
+
+    list_home_tasks = await db.get_hometasks_date_interval(today, end_date)
+    dict_home_tasks = {}
+    if list_home_tasks:
+        dict_home_tasks = get_dict_home_tasks(list_home_tasks)
+
+    send_message = '<u>Домашние задания на завтра:</u>\n'
+
+    if dict_home_tasks:
+        for day, tasks in dict_home_tasks.items():
+            for task in tasks:
+                send_message += f'\n<b>{task.lesson}:</b> {task.task}'
+    else:
+        send_message += '<i>Заданий нет.</i>'
+
+    await call.message.edit_text(send_message, reply_markup=inline_keyboards.bf_view_task)
+
+
+@dp.callback_query_handler(text='view_hometasks:this_week')
+async def view_hometask_this_week(call: types.CallbackQuery):
+    await call.answer()
+    this_day = datetime.datetime.now().isoweekday()
+
+    if this_day != 1:
+        today = datetime.datetime.now() - datetime.timedelta(days=this_day-1)
+    else:
+        today = datetime.datetime.now()
+    end_date = today + datetime.timedelta(days=5)
+
+    list_home_tasks = await db.get_hometasks_date_interval(today, end_date)
+    dict_home_tasks = {}
+    if list_home_tasks:
+        dict_home_tasks = get_dict_home_tasks(list_home_tasks)
+
+    send_message = '<u>Домашние задания на текущую неделю:</u>\n'
+
+    list_keys = list(dict_home_tasks.keys())
+    list_keys.sort()
+
+    if dict_home_tasks:
+        for day in list_keys:
+            send_message += f'\n<b>{day}</b>:'
+            for task in dict_home_tasks[day]:
+                send_message += f'\n\t\t\t\t<b>{task.lesson}:</b> {task.task}'
+    else:
+        send_message += '<i>Заданий нет.</i>'
+
+    await call.message.edit_text(send_message, reply_markup=inline_keyboards.bf_view_task)
+
+
+@dp.callback_query_handler(text='view_hometasks:next_week')
+async def view_hometask_next_week(call: types.CallbackQuery):
+    await call.answer()
+    this_day = datetime.datetime.now().isoweekday()
+
+    if this_day != 1:
+        today = datetime.datetime.now() - datetime.timedelta(days=this_day-1) + datetime.timedelta(days=7)
+    else:
+        today = datetime.datetime.now()
+    end_date = today + datetime.timedelta(days=5)
+
+    list_home_tasks = await db.get_hometasks_date_interval(today, end_date)
+    dict_home_tasks = {}
+    if list_home_tasks:
+        dict_home_tasks = get_dict_home_tasks(list_home_tasks)
+
+    send_message = '<u>Домашние задания на следующую неделю:</u>\n'
+
+    list_keys = list(dict_home_tasks.keys())
+    list_keys.sort()
+
+    if dict_home_tasks:
+        for day in list_keys:
+            send_message += f'\n<b>{day}</b>:'
+            for task in dict_home_tasks[day]:
+                send_message += f'\n\t\t\t\t<b>{task.lesson}:</b> {task.task}'
+    else:
+        send_message += '<i>Заданий нет.</i>'
+
+    await call.message.edit_text(send_message, reply_markup=inline_keyboards.bf_view_task)
+
+
+@dp.callback_query_handler(text='view_hometasks:all_next')
+async def view_hometask_next_week(call: types.CallbackQuery):
+    await call.answer()
+    this_day = datetime.datetime.now().isoweekday()
+
+    today = datetime.datetime.now()
+    end_date = today + datetime.timedelta(days=999999)
+
+    list_home_tasks = await db.get_hometasks_date_interval(today, end_date)
+    dict_home_tasks = {}
+    if list_home_tasks:
+        dict_home_tasks = get_dict_home_tasks(list_home_tasks)
+
+    send_message = '<u>Домашние задания на следующую неделю:</u>\n'
+
+    list_keys = list(dict_home_tasks.keys())
+    list_keys.sort()
+
+    if dict_home_tasks:
+        for day in list_keys:
+            send_message += f'\n<b>{day}</b>:'
+            for task in dict_home_tasks[day]:
+                send_message += f'\n\t\t\t\t<b>{task.lesson}:</b> {task.task}'
+    else:
+        send_message += '<i>Заданий нет.</i>'
+
+    await call.message.edit_text(send_message, reply_markup=inline_keyboards.bf_view_task)
+
+
+@dp.callback_query_handler(text='bf_view_task')
+async def bf_view_task(call: types.CallbackQuery):
+    await call.answer()
+    await main_view_hometasks(call.message, edit=True)
+
+
 @dp.message_handler(text='ДЗ')
 async def main_ht(message: types.Message):
     user_class = await db.check_in_class()

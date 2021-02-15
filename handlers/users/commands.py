@@ -47,15 +47,6 @@ async def bot_start(message: types.Message):
                                  reply_markup=main_keyboard.start_menu_for_new_user)
 
 
-@dp.message_handler(CommandHelp())
-async def bot_help(message: types.Message):
-    text = ("Список команд: ",
-            "/start - Начать диалог",
-            "/help - Получить справку")
-
-    await message.answer("\n".join(text))
-
-
 @dp.message_handler(commands=['detail'])
 async def detail_bot(message: types.Message):
     await message.answer(commands.detail)
@@ -72,22 +63,51 @@ async def get_main_menu(message: types.Message):
                              parse_mode='html')
 
 
-@dp.message_handler(commands=['add_member'])
-async def add_member(message: types.Message):
-    await message.answer('<i>Чтобы добавить нового участника в класс, скиньте ему код вашего класса, который он может ввести в разделе: Мой класс -> Добавить класс(Конечно же, если он ещё не состоит в каком-либо классе). Или же просто отправьте ему ссылку, при нажатии на которую его переадресует к вашему классу - t.me/...</i>')
+@dp.message_handler(commands=['commands'])
+async def get_commands(message: types.Message):
+    text = ("Список команд: ",
+            "/start - Начать диалог",
+            "/help - Получить справку",
+            "/menu - Получить главное меню, если оно исчезло",
+            "/detail - Более детальная информация о боте",
+            "/commands - Получить список всех команд и их краткое описание")
 
-# Эхо хендлер, куда летят текстовые сообщения без указанного состояния
-# @dp.message_handler(state=None)
-# async def bot_echo(message: types.Message):
-#     await message.answer(f"Эхо без состояния."
-#                          f"Сообщение:\n"
-#                          f"{message.text}")
-#
-#
-# # Эхо хендлер, куда летят ВСЕ сообщения с указанным состоянием
-# @dp.message_handler(state="*", content_types=types.ContentTypes.ANY)
-# async def bot_echo_all(message: types.Message, state: FSMContext):
-#     state = await state.get_state()
-#     await message.answer(f"Эхо в состоянии <code>{state}</code>.\n"
-#                          f"\nСодержание сообщения:\n"
-#                          f"<code>{message}</code>")
+    await message.answer("\n".join(text))
+
+@dp.message_handler(CommandHelp())
+async def bot_help(message: types.Message):
+    text = ("Выберите, что хотите узнать: ",
+            "/how_create_class - Создание класса",
+            "/how_join_class - Как присоедениться к существующему классу",
+            "/how_add_schedule - Как добавить расписание класса",
+            "/how_add_home_task - Как добавить ДЗ",
+            "Позже будут добавлены разделы помощи ещё по нескольким пунктам!)",)
+
+    await message.answer("\n".join(text))
+
+@dp.message_handler(commands=['how_create_class'])
+async def how_create_class(message: types.Message):
+    send_message = '<b>Как создать новый класс</b>\n\n'
+    send_message += 'Чтобы создать новый класс(вы это можете сделать только если не являетесь участником класса), вам нужно перейти в раздел "Мой класс", нажать кнопку "Создать класс", после чего следуйте инстукциями'
+    await message.answer(send_message)
+
+
+@dp.message_handler(commands=['how_join_class'])
+async def how_create_class(message: types.Message):
+    send_message = '<b>Как присоедениться к существующему классу</b>\n\n'
+    send_message += 'Стать участником сущетсвующего класса вы можете двумя способами. \n\nПервый заключается в том, чтобы узнать у других участников код класса, который вы можете ввести в "Мой класс" -> "Присоедениться" \n\nВторой способ заключается в том, чтобы другой участник класса отправил вам пригласительную ссылку на него. Вам всего лишь останется на неё нажать.'
+    await message.answer(send_message)
+
+
+@dp.message_handler(commands=['how_add_schedule'])
+async def how_create_class(message: types.Message):
+    send_message = '<b>Как добавить расписание класса</b>\n\n'
+    send_message += 'Чтобы добавить расписание класса вам нужно перейти в раздел "Распорядок" и нажать на пункт "Изменить", выбрать нужный день и начать писать уроки по порядку. В конце нажать на кнопку "Закончить"'
+    await message.answer(send_message)
+
+
+@dp.message_handler(commands=['how_add_home_task'])
+async def how_create_class(message: types.Message):
+    send_message = '<b>Как добавить ДЗ</b>\n\n'
+    send_message += 'Для этого вам нужно перейти в раздел "ДЗ", пункт "Добавить", выбрать предмет по которому вы хотите добавить ДЗ, выбрать на который день вы хотите его добавить и в конце концов просто его записать и подтверить.\n\n<u><b>ВАЖНО!</b> Все предметы подтягиваются из расписания уроков. Если какого-то предмета в списке нет, значит вы не добавили его в своё расписание уроков!</u>'
+    await message.answer(send_message)

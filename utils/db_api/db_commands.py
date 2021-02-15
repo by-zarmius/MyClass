@@ -1,3 +1,5 @@
+import datetime
+
 from aiogram import types, Bot
 
 from gino import Gino
@@ -93,7 +95,6 @@ class home_task(db.Model):
     lesson = Column(String(250))
     date = Column(Date())
     task = Column(String(300))
-
 
     school_class = relationship('SchoolClass', foreign_keys='SchoolClass.class_id')
 
@@ -222,7 +223,9 @@ async def get_user_by_tg_id(tg_id):
     return user
 
 
-# async def get_lesson_id(name):
+async def get_hometasks_date_interval(start_date, end_date):
+    home_tasks = await home_task.query.where(home_task.date >= start_date).where(home_task.date < end_date).gino.all()
+    return home_tasks
 
 
 async def create_db():

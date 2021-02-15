@@ -27,6 +27,7 @@ watch_schedule_days_cd = CallbackData('watch_schedule_days', 'day')
 choice_subject_cd = CallbackData('choice_subject', 'subject')
 
 my_class_cd = CallbackData('my_class', 'action')
+view_hometasks_cd = CallbackData('view_hometasks', 'date')
 
 create_class = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -398,3 +399,60 @@ def confirm_add_hometask():
     ))
 
     return kb
+
+
+def view_hometasks():
+    kb = InlineKeyboardMarkup()
+    kb.row(
+        InlineKeyboardButton(text='На сегодня',
+                             callback_data=view_hometasks_cd.new(
+                                 date='today')
+                             ),
+        InlineKeyboardButton(text='На завтра',
+                             callback_data=view_hometasks_cd.new(
+                                 date='tomorrow')
+                             )
+    )
+    kb.row(
+        InlineKeyboardButton(text='Текущая неделя',
+                             callback_data=view_hometasks_cd.new(
+                                 date='this_week')
+                             ),
+        InlineKeyboardButton(text='Следующая неделя',
+                             callback_data=view_hometasks_cd.new(
+                                 date='next_week')
+                             ),
+    )
+
+    kb.add(
+        InlineKeyboardButton(text='Все следующие',
+                             callback_data=view_hometasks_cd.new(
+                                 date='all_next'
+                             ))
+    )
+    return kb
+
+
+bf_view_task = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text='Вернуться', callback_data='bf_view_task')]
+    ]
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
